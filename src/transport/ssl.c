@@ -177,18 +177,27 @@ static SSLTransport * _ssl_init(AppTransportPluginHelper * helper, AppTransportM
 		return NULL;
 	memset(ssl, 0, sizeof(*ssl));
 	ssl->helper = helper;
-	switch((ssl->mode = mode))
-	{
-		case ATM_CLIENT:
-			res = _init_client(ssl, name);
-			break;
-		case ATM_SERVER:
-			res = _init_server(ssl, name);
-			break;
-		default:
-			res = -error_set_code(1, "Unknown transport mode");
-			break;
-	}
+	if((ssl->ssl_ctx = SSL_CTX_new(TLSv1_method())) == NULL
+			|| SSL_CTX_set_cipher_list(ssl->ssl_ctx,
+				SSL_DEFAULT_CIPHER_LIST) != 1
+			|| SSL_CTX_load_verify_locations(ssl->ssl_ctx, NULL,
+				"/etc/openssl/certs") != 1)
+		/* FIXME report the underlying error */
+		res = -error_set_code(1, "Could not initialize SSL");
+	else
+		switch((ssl->mode = mode))
+		{
+			case ATM_CLIENT:
+				res = _init_client(ssl, name);
+				break;
+			case ATM_SERVER:
+				res = _init_server(ssl, name);
+				break;
+			default:
+				res = -error_set_code(1,
+						"Unknown transport mode");
+				break;
+		}
 	/* check for errors */
 	if(res != 0)
 	{
@@ -209,18 +218,6 @@ static int _init_client(SSLTransport * ssl, char const * name)
 	struct sockaddr_in * sa;
 #endif
 
-	if((ssl->ssl_ctx = SSL_CTX_new(TLSv1_client_method())) == NULL
-			|| SSL_CTX_set_cipher_list(ssl->ssl_ctx,
-				SSL_DEFAULT_CIPHER_LIST) != 1
-			|| SSL_CTX_load_verify_locations(ssl->ssl_ctx, NULL,
-				"/etc/openssl/certs") != 1)
-	{
-		if(ssl->ssl_ctx != NULL)
-			SSL_CTX_free(ssl->ssl_ctx);
-		ssl->ssl_ctx = NULL;
-		/* FIXME report the error */
-		return -1;
-	}
 	ssl->u.client.transport = ssl;
 	ssl->u.client.fd = -1;
 	/* obtain the remote address */
@@ -282,18 +279,6 @@ static int _init_server(SSLTransport * ssl, char const * name)
 	struct sockaddr_in * sa;
 #endif
 
-	if((ssl->ssl_ctx = SSL_CTX_new(TLSv1_server_method())) == NULL
-			|| SSL_CTX_set_cipher_list(ssl->ssl_ctx,
-				SSL_DEFAULT_CIPHER_LIST) != 1
-			|| SSL_CTX_load_verify_locations(ssl->ssl_ctx, NULL,
-				"/etc/openssl/certs") != 1)
-	{
-		if(ssl->ssl_ctx != NULL)
-			SSL_CTX_free(ssl->ssl_ctx);
-		ssl->ssl_ctx = NULL;
-		/* FIXME report the error */
-		return -1;
-	}
 	ssl->u.server.fd = -1;
 	/* obtain the local address */
 	if((ssl->ai = _init_address(name, TCP_FAMILY, AI_PASSIVE)) == NULL)
