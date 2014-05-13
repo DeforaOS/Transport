@@ -28,6 +28,7 @@ dist:
 		$(PACKAGE)-$(VERSION)/src/transport/common.h \
 		$(PACKAGE)-$(VERSION)/src/transport/common.c \
 		$(PACKAGE)-$(VERSION)/src/transport/project.conf \
+		$(PACKAGE)-$(VERSION)/COPYING \
 		$(PACKAGE)-$(VERSION)/Makefile \
 		$(PACKAGE)-$(VERSION)/project.conf
 	$(RM) -- $(PACKAGE)-$(VERSION)
