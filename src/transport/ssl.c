@@ -35,6 +35,7 @@
 # include <arpa/inet.h>
 # include <netdb.h>
 #endif
+#include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <System.h>
 #include <System/App/appmessage.h>
@@ -824,28 +825,22 @@ static int _socket_callback_recv(SSLSocket * sslsocket)
 	const size_t inc = INC;
 	int ssize;
 	char * p;
+	char buf[128];
 
 	if((p = realloc(sslsocket->bufin, sslsocket->bufin_cnt + inc)) == NULL)
 		return -1;
 	sslsocket->bufin = p;
 	if((ssize = SSL_read(sslsocket->ssl,
 					&sslsocket->bufin[sslsocket->bufin_cnt],
-					inc)) < 0)
+					inc)) <= 0)
 	{
-		error_set_code(1, "%s", strerror(errno));
+		/* XXX report error (and reconnect clients) */
+		ERR_error_string(SSL_get_error(sslsocket->ssl, ssize), buf);
+		error_set_code(1, "%s", buf);
+		SSL_free(sslsocket->ssl);
+		sslsocket->ssl = NULL;
 		close(sslsocket->fd);
 		sslsocket->fd = -1;
-		/* FIXME report error */
-		return -1;
-	}
-	else if(ssize == 0)
-	{
-#ifdef DEBUG
-		fprintf(stderr, "DEBUG: %s() SSL_read() => %ld\n", __func__, ssize);
-#endif
-		close(sslsocket->fd);
-		sslsocket->fd = -1;
-		/* FIXME report transfer clean shutdown */
 		return -1;
 	}
 	sslsocket->bufin_cnt += ssize;
@@ -857,6 +852,7 @@ static int _socket_callback_recv(SSLSocket * sslsocket)
 static int _ssl_socket_callback_write(int fd, SSLSocket * sslsocket)
 {
 	int ssize;
+	char buf[128];
 
 #ifdef DEBUG
 	fprintf(stderr, "DEBUG: %s(%d)\n", __func__, fd);
@@ -865,20 +861,16 @@ static int _ssl_socket_callback_write(int fd, SSLSocket * sslsocket)
 	if(sslsocket->fd != fd)
 		return -1;
 	if((ssize = SSL_write(sslsocket->ssl, sslsocket->bufout,
-					sslsocket->bufout_cnt)) < 0)
+					sslsocket->bufout_cnt)) <= 0)
 	{
-		/* XXX report error (and reconnect) */
-		error_set_code(1, "%s", strerror(errno));
+		/* XXX report error (and reconnect clients) */
+		ERR_error_string(SSL_get_error(sslsocket->ssl, ssize), buf);
+		error_set_code(1, "%s", buf);
+		SSL_free(sslsocket->ssl);
+		sslsocket->ssl = NULL;
 		close(sslsocket->fd);
 		sslsocket->fd = -1;
 		return -1;
-	}
-	else if(ssize == 0)
-	{
-		close(sslsocket->fd);
-		sslsocket->fd = -1;
-		/* XXX report transfer interruption (and reconnect) */
-		return -error_set_code(1, "%s", strerror(errno));
 	}
 #ifdef DEBUG
 	fprintf(stderr, "DEBUG: %s() send() => %ld\n", __func__, ssize);
