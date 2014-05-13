@@ -111,8 +111,8 @@ struct _AppTransportPlugin
 /* protected */
 /* prototypes */
 /* plug-in */
-static SSLTransport * _ssl_init(AppTransportPluginHelper * helper, AppTransportMode mode,
-		char const * name);
+static SSLTransport * _ssl_init(AppTransportPluginHelper * helper,
+		AppTransportMode mode, char const * name);
 static void _ssl_destroy(SSLTransport * ssl);
 
 static int _ssl_client_send(SSLTransport * ssl, AppTransportClient * client,
@@ -165,8 +165,8 @@ AppTransportPluginDefinition transport =
 static int _init_client(SSLTransport * ssl, char const * name);
 static int _init_server(SSLTransport * ssl, char const * name);
 
-static SSLTransport * _ssl_init(AppTransportPluginHelper * helper, AppTransportMode mode,
-		char const * name)
+static SSLTransport * _ssl_init(AppTransportPluginHelper * helper,
+		AppTransportMode mode, char const * name)
 {
 	SSLTransport * ssl;
 	int res;
