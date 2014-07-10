@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 /* FIXME:
  * - check for SSL errors
- * - implement SSL_ERROR_WANT_READ/SSL_ERROR_WANT_WRITE */
+ * - check for event registration errors */
 
 
 
