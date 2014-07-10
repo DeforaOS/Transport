@@ -828,6 +828,7 @@ static int _socket_callback_recv(SSLSocket * sslsocket)
 	const size_t inc = INC;
 	int ssize;
 	char * p;
+	int err;
 	char buf[128];
 
 	if((p = realloc(sslsocket->bufin, sslsocket->bufin_cnt + inc)) == NULL)
@@ -837,14 +838,40 @@ static int _socket_callback_recv(SSLSocket * sslsocket)
 					&sslsocket->bufin[sslsocket->bufin_cnt],
 					inc)) <= 0)
 	{
-		/* XXX report error (and reconnect clients) */
-		ERR_error_string(SSL_get_error(sslsocket->ssl, ssize), buf);
-		error_set_code(1, "%s", buf);
-		SSL_free(sslsocket->ssl);
-		sslsocket->ssl = NULL;
-		close(sslsocket->fd);
-		sslsocket->fd = -1;
-		return -1;
+		/* FIXME not tested */
+		if((err = SSL_get_error(sslsocket->ssl, ssize))
+				== SSL_ERROR_WANT_WRITE)
+		{
+			event_unregister_io_write(
+					sslsocket->transport->helper->event,
+					sslsocket->fd);
+			event_register_io_write(
+					sslsocket->transport->helper->event,
+					sslsocket->fd,
+					(EventIOFunc)_ssl_socket_callback_read,
+					sslsocket);
+			return 1;
+		}
+		else if(err == SSL_ERROR_WANT_READ)
+		{
+			event_register_io_read(
+					sslsocket->transport->helper->event,
+					sslsocket->fd,
+					(EventIOFunc)_ssl_socket_callback_read,
+					sslsocket);
+			return 1;
+		}
+		else
+		{
+			/* XXX report error (and reconnect clients) */
+			ERR_error_string(err, buf);
+			error_set_code(1, "%s", buf);
+			SSL_free(sslsocket->ssl);
+			sslsocket->ssl = NULL;
+			close(sslsocket->fd);
+			sslsocket->fd = -1;
+			return -1;
+		}
 	}
 	sslsocket->bufin_cnt += ssize;
 	return 0;
@@ -855,6 +882,7 @@ static int _socket_callback_recv(SSLSocket * sslsocket)
 static int _ssl_socket_callback_write(int fd, SSLSocket * sslsocket)
 {
 	int ssize;
+	int err;
 	char buf[128];
 
 #ifdef DEBUG
@@ -866,14 +894,40 @@ static int _ssl_socket_callback_write(int fd, SSLSocket * sslsocket)
 	if((ssize = SSL_write(sslsocket->ssl, sslsocket->bufout,
 					sslsocket->bufout_cnt)) <= 0)
 	{
-		/* XXX report error (and reconnect clients) */
-		ERR_error_string(SSL_get_error(sslsocket->ssl, ssize), buf);
-		error_set_code(1, "%s", buf);
-		SSL_free(sslsocket->ssl);
-		sslsocket->ssl = NULL;
-		close(sslsocket->fd);
-		sslsocket->fd = -1;
-		return -1;
+		/* FIXME not tested */
+		if((err = SSL_get_error(sslsocket->ssl, ssize))
+				== SSL_ERROR_WANT_READ)
+		{
+			event_unregister_io_read(
+					sslsocket->transport->helper->event,
+					sslsocket->fd);
+			event_register_io_write(
+					sslsocket->transport->helper->event,
+					sslsocket->fd,
+					(EventIOFunc)_ssl_socket_callback_write,
+					sslsocket);
+			return 1;
+		}
+		else if(err == SSL_ERROR_WANT_WRITE)
+		{
+			event_register_io_write(
+					sslsocket->transport->helper->event,
+					sslsocket->fd,
+					(EventIOFunc)_ssl_socket_callback_write,
+					sslsocket);
+			return 1;
+		}
+		else
+		{
+			/* XXX report error (and reconnect clients) */
+			ERR_error_string(err, buf);
+			error_set_code(1, "%s", buf);
+			SSL_free(sslsocket->ssl);
+			sslsocket->ssl = NULL;
+			close(sslsocket->fd);
+			sslsocket->fd = -1;
+			return -1;
+		}
 	}
 #ifdef DEBUG
 	fprintf(stderr, "DEBUG: %s() send() => %ld\n", __func__, ssize);
