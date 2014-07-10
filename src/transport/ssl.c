@@ -209,6 +209,9 @@ static SSLTransport * _ssl_init(AppTransportPluginHelper * helper,
 		_ssl_destroy(ssl);
 		return NULL;
 	}
+#if 0 /* XXX may be useful */
+	SSL_CTX_set_mode(ssl->ssl_ctx, SSL_MODE_ENABLE_PARTIAL_WRITE);
+#endif
 	return ssl;
 }
 
