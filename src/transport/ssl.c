@@ -204,7 +204,7 @@ static SSLTransport * _ssl_init(AppTransportPluginHelper * helper,
 	{
 #ifdef DEBUG
 		fprintf(stderr, "DEBUG: %s() => %d (%s)\n", __func__, res,
-				error_get());
+				error_get(NULL));
 #endif
 		_ssl_destroy(ssl);
 		return NULL;
