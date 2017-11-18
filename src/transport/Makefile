@@ -1,4 +1,4 @@
-TARGETS	= $(OBJDIR)ssl.so $(OBJDIR)ssl4.so $(OBJDIR)ssl6.so
+TARGETS	= $(OBJDIR)ssl$(SOEXT) $(OBJDIR)ssl4$(SOEXT) $(OBJDIR)ssl6$(SOEXT)
 OBJDIR	=
 PREFIX	= /usr/local
 DESTDIR	=
@@ -9,9 +9,12 @@ CPPFLAGS=
 CFLAGSF	= -W -fPIC `pkg-config --cflags libApp`
 CFLAGS	= -Wall -g -O2 -pedantic
 LDFLAGSF= `pkg-config --libs libApp`
+EXEEXT	=
 AR	= ar
+ARFLAGS	= -rc
 RANLIB	= ranlib
 CCSHARED= $(CC) -shared
+SOEXT	= .so
 RM	= rm -f
 LN	= ln -f
 MKDIR	= mkdir -m 0755 -p
@@ -24,22 +27,22 @@ ssl_OBJS = $(OBJDIR)ssl.o
 ssl_CFLAGS = $(CPPFLAGSF) $(CPPFLAGS) $(CFLAGSF) $(CFLAGS)
 ssl_LDFLAGS = $(LDFLAGSF) $(LDFLAGS)
 
-$(OBJDIR)ssl.so: $(ssl_OBJS)
-	$(CCSHARED) -o $(OBJDIR)ssl.so $(ssl_OBJS) $(ssl_LDFLAGS)
+$(OBJDIR)ssl$(SOEXT): $(ssl_OBJS)
+	$(CCSHARED) -o $(OBJDIR)ssl$(SOEXT) $(ssl_OBJS) $(ssl_LDFLAGS)
 
 ssl4_OBJS = $(OBJDIR)ssl4.o
 ssl4_CFLAGS = $(CPPFLAGSF) $(CPPFLAGS) $(CFLAGSF) $(CFLAGS)
 ssl4_LDFLAGS = $(LDFLAGSF) $(LDFLAGS)
 
-$(OBJDIR)ssl4.so: $(ssl4_OBJS)
-	$(CCSHARED) -o $(OBJDIR)ssl4.so $(ssl4_OBJS) $(ssl4_LDFLAGS)
+$(OBJDIR)ssl4$(SOEXT): $(ssl4_OBJS)
+	$(CCSHARED) -o $(OBJDIR)ssl4$(SOEXT) $(ssl4_OBJS) $(ssl4_LDFLAGS)
 
 ssl6_OBJS = $(OBJDIR)ssl6.o
 ssl6_CFLAGS = $(CPPFLAGSF) $(CPPFLAGS) $(CFLAGSF) $(CFLAGS)
 ssl6_LDFLAGS = $(LDFLAGSF) $(LDFLAGS)
 
-$(OBJDIR)ssl6.so: $(ssl6_OBJS)
-	$(CCSHARED) -o $(OBJDIR)ssl6.so $(ssl6_OBJS) $(ssl6_LDFLAGS)
+$(OBJDIR)ssl6$(SOEXT): $(ssl6_OBJS)
+	$(CCSHARED) -o $(OBJDIR)ssl6$(SOEXT) $(ssl6_OBJS) $(ssl6_LDFLAGS)
 
 $(OBJDIR)ssl.o: ssl.c common.h common.c
 	$(CC) $(ssl_CFLAGS) -o $(OBJDIR)ssl.o -c ssl.c
@@ -58,15 +61,15 @@ distclean: clean
 
 install: $(TARGETS)
 	$(MKDIR) $(DESTDIR)$(LIBDIR)/App/transport
-	$(INSTALL) -m 0755 $(OBJDIR)ssl.so $(DESTDIR)$(LIBDIR)/App/transport/ssl.so
+	$(INSTALL) -m 0755 $(OBJDIR)ssl$(SOEXT) $(DESTDIR)$(LIBDIR)/App/transport/ssl$(SOEXT)
 	$(MKDIR) $(DESTDIR)$(LIBDIR)/App/transport
-	$(INSTALL) -m 0755 $(OBJDIR)ssl4.so $(DESTDIR)$(LIBDIR)/App/transport/ssl4.so
+	$(INSTALL) -m 0755 $(OBJDIR)ssl4$(SOEXT) $(DESTDIR)$(LIBDIR)/App/transport/ssl4$(SOEXT)
 	$(MKDIR) $(DESTDIR)$(LIBDIR)/App/transport
-	$(INSTALL) -m 0755 $(OBJDIR)ssl6.so $(DESTDIR)$(LIBDIR)/App/transport/ssl6.so
+	$(INSTALL) -m 0755 $(OBJDIR)ssl6$(SOEXT) $(DESTDIR)$(LIBDIR)/App/transport/ssl6$(SOEXT)
 
 uninstall:
-	$(RM) -- $(DESTDIR)$(LIBDIR)/App/transport/ssl.so
-	$(RM) -- $(DESTDIR)$(LIBDIR)/App/transport/ssl4.so
-	$(RM) -- $(DESTDIR)$(LIBDIR)/App/transport/ssl6.so
+	$(RM) -- $(DESTDIR)$(LIBDIR)/App/transport/ssl$(SOEXT)
+	$(RM) -- $(DESTDIR)$(LIBDIR)/App/transport/ssl4$(SOEXT)
+	$(RM) -- $(DESTDIR)$(LIBDIR)/App/transport/ssl6$(SOEXT)
 
 .PHONY: all clean distclean install uninstall
